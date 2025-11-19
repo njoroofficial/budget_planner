@@ -104,7 +104,12 @@
   - Add proper TypeScript props interface
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 9. Build CategoryCard component
+- [x] 9. Build CategoryCard component
+
+
+
+
+
   - Create components/CategoryCard.tsx
   - Display category name, planned amount, and actual spent
   - Show remaining budget for the category
@@ -115,7 +120,12 @@
   - Add proper TypeScript props interface
   - _Requirements: 4.1, 5.3, 5.4, 5.5_
 
-- [ ] 10. Build BudgetAllocation component
+- [x] 10. Build BudgetAllocation component
+
+
+
+
+
   - Create components/BudgetAllocation.tsx as a Client Component ('use client')
   - Display list of categories using CategoryCard component
   - Add form to create new category (name and planned amount inputs)
