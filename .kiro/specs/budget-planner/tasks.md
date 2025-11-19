@@ -24,6 +24,11 @@
   - _Requirements: 1.1, 3.1, 5.1_
 
 - [ ] 3. Implement income calculator utility
+
+
+
+
+
   - Create utils/incomeCalculator.ts with tax calculation functions
   - Implement calculateSHA function (2.75% of gross pay)
   - Implement calculatePAYEE function with progressive tax brackets and personal relief
