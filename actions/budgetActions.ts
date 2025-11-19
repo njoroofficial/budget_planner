@@ -1,14 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { Category } from '../types';
-import { createCategory, updateCategory, deleteCategory } from '../utils/budgetManager';
+import { createCategory, updateCategory, deleteCategory, getAllCategories } from '../utils/budgetManager';
 import { addExpense, updateExpense, deleteExpense } from '../utils/expenseTracker';
 
 /**
  * Server Actions for Budget Planner data mutations
- * These actions handle form submissions and data validation
- * Note: Data persistence is handled client-side via LocalStorage
+ * These actions handle form submissions, data validation, and Supabase persistence
  */
 
 // Action result types for consistent error handling
@@ -21,7 +19,7 @@ export type ActionResult = {
 /**
  * Server Action to create a new budget category
  * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing category name, planned amount, and current categories
+ * @param formData - Form data containing category name and planned amount
  * @returns ActionResult with success status and message
  */
 export async function createCategoryAction(
@@ -32,7 +30,6 @@ export async function createCategoryAction(
     // Extract and validate form data
     const name = formData.get('name') as string;
     const plannedAmountStr = formData.get('plannedAmount') as string;
-    const categoriesJson = formData.get('categories') as string;
 
     // Input validation
     if (!name || name.trim().length === 0) {
@@ -58,18 +55,8 @@ export async function createCategoryAction(
       };
     }
 
-    // Parse current categories from form data
-    let categories: Category[] = [];
-    if (categoriesJson) {
-      try {
-        categories = JSON.parse(categoriesJson);
-      } catch {
-        categories = [];
-      }
-    }
-
-    // Create new category using utility function
-    const updatedCategories = createCategory(categories, name, plannedAmount);
+    // Create new category in Supabase
+    const newCategory = await createCategory(name, plannedAmount);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -77,7 +64,7 @@ export async function createCategoryAction(
     return {
       success: true,
       message: 'Category created successfully',
-      data: updatedCategories
+      data: newCategory
     };
 
   } catch (error) {
@@ -91,7 +78,7 @@ export async function createCategoryAction(
 /**
  * Server Action to update an existing budget category
  * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing category ID, name, planned amount, and current categories
+ * @param formData - Form data containing category ID, name, and planned amount
  * @returns ActionResult with success status and message
  */
 export async function updateCategoryAction(
@@ -103,7 +90,6 @@ export async function updateCategoryAction(
     const id = formData.get('id') as string;
     const name = formData.get('name') as string;
     const plannedAmountStr = formData.get('plannedAmount') as string;
-    const categoriesJson = formData.get('categories') as string;
 
     // Input validation
     if (!id) {
@@ -136,21 +122,8 @@ export async function updateCategoryAction(
       };
     }
 
-    // Parse current categories from form data
-    let categories: Category[] = [];
-    if (categoriesJson) {
-      try {
-        categories = JSON.parse(categoriesJson);
-      } catch {
-        return {
-          success: false,
-          message: 'Invalid categories data'
-        };
-      }
-    }
-
-    // Update category using utility function
-    const updatedCategories = updateCategory(categories, id, name, plannedAmount);
+    // Update category in Supabase
+    const updatedCategory = await updateCategory(id, name, plannedAmount);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -158,7 +131,7 @@ export async function updateCategoryAction(
     return {
       success: true,
       message: 'Category updated successfully',
-      data: updatedCategories
+      data: updatedCategory
     };
 
   } catch (error) {
@@ -172,7 +145,7 @@ export async function updateCategoryAction(
 /**
  * Server Action to delete a budget category
  * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing category ID and current categories
+ * @param formData - Form data containing category ID
  * @returns ActionResult with success status and message
  */
 export async function deleteCategoryAction(
@@ -182,7 +155,6 @@ export async function deleteCategoryAction(
   try {
     // Extract and validate form data
     const id = formData.get('id') as string;
-    const categoriesJson = formData.get('categories') as string;
 
     // Input validation
     if (!id) {
@@ -192,29 +164,15 @@ export async function deleteCategoryAction(
       };
     }
 
-    // Parse current categories from form data
-    let categories: Category[] = [];
-    if (categoriesJson) {
-      try {
-        categories = JSON.parse(categoriesJson);
-      } catch {
-        return {
-          success: false,
-          message: 'Invalid categories data'
-        };
-      }
-    }
-
-    // Delete category using utility function
-    const updatedCategories = deleteCategory(categories, id);
+    // Delete category from Supabase
+    await deleteCategory(id);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
 
     return {
       success: true,
-      message: 'Category deleted successfully',
-      data: updatedCategories
+      message: 'Category deleted successfully'
     };
 
   } catch (error) {
@@ -228,7 +186,7 @@ export async function deleteCategoryAction(
 /**
  * Server Action to add a new expense to a category
  * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing category ID, amount, description, date, and current categories
+ * @param formData - Form data containing category ID, amount, description, and date
  * @returns ActionResult with success status and message
  */
 export async function addExpenseAction(
@@ -241,7 +199,6 @@ export async function addExpenseAction(
     const amountStr = formData.get('amount') as string;
     const description = formData.get('description') as string;
     const dateStr = formData.get('date') as string;
-    const categoriesJson = formData.get('categories') as string;
 
     // Input validation
     if (!categoryId) {
@@ -290,21 +247,8 @@ export async function addExpenseAction(
       };
     }
 
-    // Parse current categories from form data
-    let categories: Category[] = [];
-    if (categoriesJson) {
-      try {
-        categories = JSON.parse(categoriesJson);
-      } catch {
-        return {
-          success: false,
-          message: 'Invalid categories data'
-        };
-      }
-    }
-
-    // Add expense using utility function
-    const updatedCategories = addExpense(categories, categoryId, amount, description, date);
+    // Add expense to Supabase
+    const newExpense = await addExpense(categoryId, amount, description, date);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -312,7 +256,7 @@ export async function addExpenseAction(
     return {
       success: true,
       message: 'Expense added successfully',
-      data: updatedCategories
+      data: newExpense
     };
 
   } catch (error) {
@@ -326,7 +270,7 @@ export async function addExpenseAction(
 /**
  * Server Action to update an existing expense
  * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing expense ID, amount, description, date, and current categories
+ * @param formData - Form data containing expense ID, amount, description, and date
  * @returns ActionResult with success status and message
  */
 export async function updateExpenseAction(
@@ -339,7 +283,6 @@ export async function updateExpenseAction(
     const amountStr = formData.get('amount') as string;
     const description = formData.get('description') as string;
     const dateStr = formData.get('date') as string;
-    const categoriesJson = formData.get('categories') as string;
 
     // Input validation
     if (!id) {
@@ -388,21 +331,8 @@ export async function updateExpenseAction(
       };
     }
 
-    // Parse current categories from form data
-    let categories: Category[] = [];
-    if (categoriesJson) {
-      try {
-        categories = JSON.parse(categoriesJson);
-      } catch {
-        return {
-          success: false,
-          message: 'Invalid categories data'
-        };
-      }
-    }
-
-    // Update expense using utility function
-    const updatedCategories = updateExpense(categories, id, amount, description, date);
+    // Update expense in Supabase
+    const updatedExpense = await updateExpense(id, amount, description, date);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -410,7 +340,7 @@ export async function updateExpenseAction(
     return {
       success: true,
       message: 'Expense updated successfully',
-      data: updatedCategories
+      data: updatedExpense
     };
 
   } catch (error) {
@@ -424,7 +354,7 @@ export async function updateExpenseAction(
 /**
  * Server Action to delete an expense
  * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing expense ID and current categories
+ * @param formData - Form data containing expense ID
  * @returns ActionResult with success status and message
  */
 export async function deleteExpenseAction(
@@ -434,7 +364,6 @@ export async function deleteExpenseAction(
   try {
     // Extract and validate form data
     const id = formData.get('id') as string;
-    const categoriesJson = formData.get('categories') as string;
 
     // Input validation
     if (!id) {
@@ -444,29 +373,15 @@ export async function deleteExpenseAction(
       };
     }
 
-    // Parse current categories from form data
-    let categories: Category[] = [];
-    if (categoriesJson) {
-      try {
-        categories = JSON.parse(categoriesJson);
-      } catch {
-        return {
-          success: false,
-          message: 'Invalid categories data'
-        };
-      }
-    }
-
-    // Delete expense using utility function
-    const updatedCategories = deleteExpense(categories, id);
+    // Delete expense from Supabase
+    await deleteExpense(id);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
 
     return {
       success: true,
-      message: 'Expense deleted successfully',
-      data: updatedCategories
+      message: 'Expense deleted successfully'
     };
 
   } catch (error) {

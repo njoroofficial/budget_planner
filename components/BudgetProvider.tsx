@@ -3,21 +3,22 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppState, Category, PayBreakdown } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/constants';
-import { saveData, loadData, isStorageAvailable } from '@/utils/storageService';
 import { handleStorageError, logError, getErrorMessage } from '@/utils/errorHandling';
+import { getAllCategoriesWithExpenses } from '@/utils/budgetRepository';
+import { getCurrentIncome, saveIncome } from '@/utils/budgetRepository';
 
 /**
  * Context interface for budget state management
  */
 interface BudgetContextType {
   appState: AppState;
-  updateIncome: (income: PayBreakdown | null) => void;
+  updateIncome: (income: PayBreakdown | null) => Promise<void>;
   updateCategories: (categories: Category[]) => void;
+  refreshData: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
   retryDataLoad: () => void;
-  storageAvailable: boolean;
 }
 
 /**
@@ -34,7 +35,7 @@ interface BudgetProviderProps {
 
 /**
  * BudgetProvider component that manages global budget state
- * Handles data persistence with LocalStorage and provides state to child components
+ * Handles data persistence with Supabase and provides state to child components
  */
 export function BudgetProvider({ children }: BudgetProviderProps) {
   const [appState, setAppState] = useState<AppState>({
@@ -43,7 +44,6 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [storageAvailable, setStorageAvailable] = useState(false);
 
   /**
    * Initialize default categories if none exist
@@ -59,66 +59,30 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   };
 
   /**
-   * Load initial data from LocalStorage on component mount
+   * Load initial data from Supabase on component mount
    */
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Check if storage is available
-      const storageIsAvailable = isStorageAvailable();
-      setStorageAvailable(storageIsAvailable);
+      // Fetch income and categories from Supabase
+      const [income, categories] = await Promise.all([
+        getCurrentIncome(),
+        getAllCategoriesWithExpenses()
+      ]);
 
-      if (!storageIsAvailable) {
-        throw handleStorageError(new Error('LocalStorage is not available'));
-      }
+      // If no categories exist, use default categories (for new users)
+      const finalCategories = categories.length > 0 ? categories : initializeDefaultCategories();
 
-      const savedData = loadData<AppState>('budgetPlannerData');
-      
-      if (savedData) {
-        // Validate loaded data structure
-        const validatedData: AppState = {
-          income: savedData.income || null,
-          categories: Array.isArray(savedData.categories) ? savedData.categories : []
-        };
+      setAppState({
+        income,
+        categories: finalCategories
+      });
 
-        // Validate categories structure
-        validatedData.categories = validatedData.categories.filter(cat => 
-          cat && 
-          typeof cat.id === 'string' && 
-          typeof cat.name === 'string' && 
-          typeof cat.plannedAmount === 'number' && 
-          typeof cat.actualSpent === 'number' &&
-          Array.isArray(cat.expenses)
-        );
-
-        // If no valid categories exist, initialize with defaults
-        if (validatedData.categories.length === 0) {
-          validatedData.categories = initializeDefaultCategories();
-        }
-
-        setAppState(validatedData);
-      } else {
-        // No saved data, initialize with default categories
-        const initialState: AppState = {
-          income: null,
-          categories: initializeDefaultCategories()
-        };
-        setAppState(initialState);
-        
-        // Try to save initial state to LocalStorage
-        try {
-          saveData('budgetPlannerData', initialState);
-        } catch (saveError) {
-          const appError = handleStorageError(saveError);
-          logError(appError, 'saving initial data');
-          setError(getErrorMessage(appError));
-        }
-      }
     } catch (err) {
       const appError = handleStorageError(err);
-      logError(appError, 'loading initial budget data');
+      logError(appError, 'loading initial budget data from Supabase');
       setError(getErrorMessage(appError));
       
       // Fallback to default state
@@ -137,36 +101,35 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   }, []);
 
   /**
-   * Auto-save data to LocalStorage whenever state changes
+   * Refresh data from Supabase
    */
-  useEffect(() => {
-    if (!isLoading && appState && storageAvailable) {
-      try {
-        saveData('budgetPlannerData', appState);
-        // Clear any previous save errors
-        if (error && error.includes('save')) {
-          setError(null);
-        }
-      } catch (err) {
-        const appError = handleStorageError(err);
-        logError(appError, 'auto-saving budget data');
-        setError(`${getErrorMessage(appError)} Your changes may not be preserved.`);
-      }
-    }
-  }, [appState, isLoading, storageAvailable, error]);
+  const refreshData = async () => {
+    await loadInitialData();
+  };
 
   /**
-   * Update income in the app state
+   * Update income in the app state and save to Supabase
    */
-  const updateIncome = (income: PayBreakdown | null) => {
-    setAppState(prevState => ({
-      ...prevState,
-      income
-    }));
+  const updateIncome = async (income: PayBreakdown | null) => {
+    try {
+      if (income) {
+        await saveIncome(income);
+      }
+      setAppState(prevState => ({
+        ...prevState,
+        income
+      }));
+    } catch (err) {
+      const appError = handleStorageError(err);
+      logError(appError, 'saving income to Supabase');
+      setError(getErrorMessage(appError));
+      throw appError;
+    }
   };
 
   /**
    * Update categories in the app state
+   * Note: Categories are updated via server actions which trigger revalidation
    */
   const updateCategories = (categories: Category[]) => {
     setAppState(prevState => ({
@@ -183,7 +146,7 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   };
 
   /**
-   * Retry loading data from storage
+   * Retry loading data from Supabase
    */
   const retryDataLoad = () => {
     loadInitialData();
@@ -193,11 +156,11 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
     appState,
     updateIncome,
     updateCategories,
+    refreshData,
     isLoading,
     error,
     clearError,
-    retryDataLoad,
-    storageAvailable
+    retryDataLoad
   };
 
   return (
