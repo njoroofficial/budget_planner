@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PayBreakdown } from '@/types';
 import { calculateNetPay } from '@/utils/incomeCalculator';
 import { APP_CONSTANTS } from '@/constants';
@@ -17,6 +17,14 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
   const [payBreakdown, setPayBreakdown] = useState<PayBreakdown | null>(null);
   const [error, setError] = useState<string>('');
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
+  
+  // Store the callback in a ref to avoid dependency issues
+  const onIncomeChangeRef = useRef(onIncomeChange);
+  
+  // Update ref when callback changes
+  useEffect(() => {
+    onIncomeChangeRef.current = onIncomeChange;
+  }, [onIncomeChange]);
 
   // Calculate breakdown when gross pay changes
   useEffect(() => {
@@ -27,7 +35,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
       // Handle empty input
       if (grossPay === '') {
         setPayBreakdown(null);
-        onIncomeChange?.(null);
+        onIncomeChangeRef.current?.(null);
         return;
       }
 
@@ -36,7 +44,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
       if (!validation.isValid) {
         setError(validation.error || 'Invalid gross pay');
         setPayBreakdown(null);
-        onIncomeChange?.(null);
+        onIncomeChangeRef.current?.(null);
         return;
       }
 
@@ -50,12 +58,12 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
         
         const breakdown = calculateNetPay(numericGrossPay);
         setPayBreakdown(breakdown);
-        onIncomeChange?.(breakdown);
+        onIncomeChangeRef.current?.(breakdown);
       } catch (calculationError) {
         const appError = handleCalculationError(calculationError, 'income calculation');
         setError(appError.message);
         setPayBreakdown(null);
-        onIncomeChange?.(null);
+        onIncomeChangeRef.current?.(null);
         logError(appError, 'calculating income breakdown');
       } finally {
         setIsCalculating(false);
@@ -63,7 +71,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
     };
 
     calculateBreakdown();
-  }, [grossPay, onIncomeChange]);
+  }, [grossPay]);
 
   const handleGrossPayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -104,7 +112,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
   return (
     <div className="card-elevated p-6 lg:p-8">
       <div className="flex items-center space-x-3 mb-8">
-        <div className="p-3 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl shadow-lg">
+        <div className="p-3 bg-linear-to-r from-green-500 to-blue-500 rounded-xl shadow-lg">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
           </svg>
@@ -172,7 +180,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
           </div>
           
           {/* SHA Deduction */}
-          <div className="group flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-md transition-all duration-200">
+          <div className="group flex justify-between items-center p-4 bg-linear-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-md transition-all duration-200">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,7 +206,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
           </div>
 
           {/* PAYEE Deduction */}
-          <div className="group flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-md transition-all duration-200">
+          <div className="group flex justify-between items-center p-4 bg-linear-to-r from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-md transition-all duration-200">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +233,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
           </div>
 
           {/* Housing Levy */}
-          <div className="group flex justify-between items-center p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200 hover:shadow-md transition-all duration-200">
+          <div className="group flex justify-between items-center p-4 bg-linear-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200 hover:shadow-md transition-all duration-200">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +259,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
           </div>
 
           {/* Total Deductions */}
-          <div className="flex justify-between items-center p-5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl border-2 border-gray-300 shadow-sm">
+          <div className="flex justify-between items-center p-5 bg-linear-to-r from-gray-100 to-gray-200 rounded-xl border-2 border-gray-300 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,9 +272,9 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
           </div>
 
           {/* Net Pay */}
-          <div className="flex justify-between items-center p-6 bg-gradient-to-r from-emerald-100 to-green-100 rounded-xl border-2 border-emerald-300 shadow-lg">
+          <div className="flex justify-between items-center p-6 bg-linear-to-r from-emerald-100 to-green-100 rounded-xl border-2 border-emerald-300 shadow-lg">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl flex items-center justify-center shadow-md">
+              <div className="w-12 h-12 bg-linear-to-r from-emerald-500 to-green-500 rounded-xl flex items-center justify-center shadow-md">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
@@ -283,7 +291,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
 
       {/* Example/Help Text */}
       {!payBreakdown && !error && (
-        <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div className="mt-6 p-5 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -200,7 +200,7 @@ export default function BudgetAllocation({ categories, income, onCategoriesChang
   return (
     <div className="card-elevated p-6 lg:p-8 h-fit">
       <div className="flex items-center space-x-3 mb-8">
-        <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+        <div className="p-3 bg-linear-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
@@ -209,7 +209,7 @@ export default function BudgetAllocation({ categories, income, onCategoriesChang
       </div>
       
       {/* Budget Summary */}
-      <div className="mb-8 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200">
+      <div className="mb-8 p-6 bg-linear-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-center sm:text-left">
             <div className="text-sm font-medium text-gray-600 mb-1">Net Pay</div>
@@ -240,7 +240,7 @@ export default function BudgetAllocation({ categories, income, onCategoriesChang
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div 
               className={`h-3 rounded-full transition-all duration-500 ${
-                isOverAllocated ? 'bg-red-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                isOverAllocated ? 'bg-red-500' : 'bg-linear-to-r from-blue-500 to-purple-500'
               }`}
               style={{ width: `${Math.min((totalAllocated / netPay) * 100, 100)}%` }}
             ></div>
@@ -265,7 +265,7 @@ export default function BudgetAllocation({ categories, income, onCategoriesChang
       </div>
 
       {/* Category Form */}
-      <form onSubmit={handleSubmit} className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+      <form onSubmit={handleSubmit} className="mb-8 p-6 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
         <div className="flex items-center space-x-2 mb-6">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

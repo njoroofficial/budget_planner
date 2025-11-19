@@ -44,13 +44,13 @@ export default function BudgetPlannerContent() {
         {/* Header */}
         <header className="mb-8 text-center lg:text-left animate-fade-in">
           <div className="inline-flex items-center justify-center lg:justify-start space-x-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-linear-to-r from-blue-600 to-green-600 rounded-xl shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-linear-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
                 Budget Planner
               </h1>
             </div>
@@ -128,7 +128,7 @@ export default function BudgetPlannerContent() {
           {/* Help Section */}
           <section className="card-elevated p-6 lg:p-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+              <div className="p-2 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -136,7 +136,7 @@ export default function BudgetPlannerContent() {
               <h2 className="text-2xl font-bold text-gray-800">How to Use Budget Planner</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-              <div className="group p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-lg transition-shadow duration-300">
+              <div className="group p-5 bg-linear-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
                   <div className="font-bold text-blue-800">Enter Income</div>
@@ -145,7 +145,7 @@ export default function BudgetPlannerContent() {
                   Input your gross monthly salary to calculate net pay after Kenyan statutory deductions (SHA, PAYEE, Housing Levy).
                 </p>
               </div>
-              <div className="group p-5 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-lg transition-shadow duration-300">
+              <div className="group p-5 bg-linear-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
                   <div className="font-bold text-green-800">Plan Budget</div>
@@ -154,7 +154,7 @@ export default function BudgetPlannerContent() {
                   Allocate your net pay across budget categories like rent, transport, savings, and food.
                 </p>
               </div>
-              <div className="group p-5 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:shadow-lg transition-shadow duration-300">
+              <div className="group p-5 bg-linear-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
                   <div className="font-bold text-orange-800">Track Expenses</div>
@@ -163,7 +163,7 @@ export default function BudgetPlannerContent() {
                   Record your actual expenses in each category to monitor spending against your budget.
                 </p>
               </div>
-              <div className="group p-5 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-lg transition-shadow duration-300">
+              <div className="group p-5 bg-linear-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
                   <div className="font-bold text-purple-800">Monitor Health</div>

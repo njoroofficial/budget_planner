@@ -296,7 +296,7 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
   return (
     <div className="card-elevated p-6 lg:p-8 h-fit">
       <div className="flex items-center space-x-3 mb-8">
-        <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-lg">
+        <div className="p-3 bg-linear-to-r from-orange-500 to-red-500 rounded-xl shadow-lg">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
@@ -307,7 +307,7 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
       </div>
 
       {/* Expense Form */}
-      <form onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense} className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+      <form onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense} className="mb-8 p-6 bg-linear-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
         <div className="flex items-center space-x-2 mb-6">
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
