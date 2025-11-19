@@ -89,7 +89,12 @@
   - Define tax rates and calculation constants
   - _Requirements: 3.1_
 
-- [ ] 8. Build IncomeSection component
+- [x] 8. Build IncomeSection component
+
+
+
+
+
   - Create components/IncomeSection.tsx as a Client Component ('use client')
   - Add input field for gross pay with validation
   - Display calculated deductions (SHA, PAYEE, Housing Levy) with labels
