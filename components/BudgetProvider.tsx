@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppState, Category, PayBreakdown } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/constants';
-import { saveData, loadData } from '@/utils/storageService';
+import { saveData, loadData, isStorageAvailable } from '@/utils/storageService';
+import { handleStorageError, logError, getErrorMessage } from '@/utils/errorHandling';
 
 /**
  * Context interface for budget state management
@@ -14,6 +15,9 @@ interface BudgetContextType {
   updateCategories: (categories: Category[]) => void;
   isLoading: boolean;
   error: string | null;
+  clearError: () => void;
+  retryDataLoad: () => void;
+  storageAvailable: boolean;
 }
 
 /**
@@ -39,6 +43,7 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [storageAvailable, setStorageAvailable] = useState(false);
 
   /**
    * Initialize default categories if none exist
@@ -56,10 +61,18 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   /**
    * Load initial data from LocalStorage on component mount
    */
-  useEffect(() => {
+  const loadInitialData = async () => {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Check if storage is available
+      const storageIsAvailable = isStorageAvailable();
+      setStorageAvailable(storageIsAvailable);
+
+      if (!storageIsAvailable) {
+        throw handleStorageError(new Error('LocalStorage is not available'));
+      }
 
       const savedData = loadData<AppState>('budgetPlannerData');
       
@@ -70,7 +83,17 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
           categories: Array.isArray(savedData.categories) ? savedData.categories : []
         };
 
-        // If no categories exist, initialize with defaults
+        // Validate categories structure
+        validatedData.categories = validatedData.categories.filter(cat => 
+          cat && 
+          typeof cat.id === 'string' && 
+          typeof cat.name === 'string' && 
+          typeof cat.plannedAmount === 'number' && 
+          typeof cat.actualSpent === 'number' &&
+          Array.isArray(cat.expenses)
+        );
+
+        // If no valid categories exist, initialize with defaults
         if (validatedData.categories.length === 0) {
           validatedData.categories = initializeDefaultCategories();
         }
@@ -84,12 +107,19 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
         };
         setAppState(initialState);
         
-        // Save initial state to LocalStorage
-        saveData('budgetPlannerData', initialState);
+        // Try to save initial state to LocalStorage
+        try {
+          saveData('budgetPlannerData', initialState);
+        } catch (saveError) {
+          const appError = handleStorageError(saveError);
+          logError(appError, 'saving initial data');
+          setError(getErrorMessage(appError));
+        }
       }
     } catch (err) {
-      console.error('Error loading budget data:', err);
-      setError('Failed to load saved data. Starting with default categories.');
+      const appError = handleStorageError(err);
+      logError(appError, 'loading initial budget data');
+      setError(getErrorMessage(appError));
       
       // Fallback to default state
       const fallbackState: AppState = {
@@ -100,22 +130,30 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadInitialData();
   }, []);
 
   /**
    * Auto-save data to LocalStorage whenever state changes
    */
   useEffect(() => {
-    if (!isLoading && appState) {
+    if (!isLoading && appState && storageAvailable) {
       try {
         saveData('budgetPlannerData', appState);
-        setError(null);
+        // Clear any previous save errors
+        if (error && error.includes('save')) {
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error saving budget data:', err);
-        setError('Failed to save data. Your changes may not be preserved.');
+        const appError = handleStorageError(err);
+        logError(appError, 'auto-saving budget data');
+        setError(`${getErrorMessage(appError)} Your changes may not be preserved.`);
       }
     }
-  }, [appState, isLoading]);
+  }, [appState, isLoading, storageAvailable, error]);
 
   /**
    * Update income in the app state
@@ -137,12 +175,29 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
     }));
   };
 
+  /**
+   * Clear the current error
+   */
+  const clearError = () => {
+    setError(null);
+  };
+
+  /**
+   * Retry loading data from storage
+   */
+  const retryDataLoad = () => {
+    loadInitialData();
+  };
+
   const contextValue: BudgetContextType = {
     appState,
     updateIncome,
     updateCategories,
     isLoading,
-    error
+    error,
+    clearError,
+    retryDataLoad,
+    storageAvailable
   };
 
   return (

@@ -1,9 +1,19 @@
 'use client';
 
-import { useState, useOptimistic } from 'react';
+import { useState, useOptimistic, useTransition } from 'react';
 import { Category, Expense } from '../types';
 import ExpenseItem from './ExpenseItem';
 import { addExpense, updateExpense, deleteExpense } from '../utils/expenseTracker';
+import { 
+  validateExpenseAmount, 
+  validateExpenseDescription, 
+  validateDate, 
+  validateCategorySelection,
+  validateFormData,
+  isFormValid,
+  getValidationErrors
+} from '../utils/validation';
+import { handleValidationError, logError } from '../utils/errorHandling';
 
 /**
  * Props interface for ExpenseTracker component
@@ -29,6 +39,8 @@ interface ExpenseFormData {
  * Uses useOptimistic for instant UI feedback on expense operations.
  */
 export default function ExpenseTracker({ categories, onCategoriesChange }: ExpenseTrackerProps) {
+  const [isPending, startTransition] = useTransition();
+  
   // Form state for new expense
   const [formData, setFormData] = useState<ExpenseFormData>({
     categoryId: '',
@@ -75,39 +87,37 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
   );
 
   /**
-   * Validates expense form inputs
+   * Validates expense form inputs using validation utilities
    */
   const validateForm = (data: ExpenseFormData): boolean => {
-    const newErrors: Partial<ExpenseFormData> = {};
+    try {
+      // Get available category IDs
+      const availableCategoryIds = categories.map(cat => cat.id);
 
-    // Validate category selection
-    if (!data.categoryId) {
-      newErrors.categoryId = 'Please select a category';
+      // Define validation rules
+      const validationRules = {
+        categoryId: (value: string) => validateCategorySelection(value, availableCategoryIds),
+        amount: (value: string) => validateExpenseAmount(value),
+        description: (value: string) => validateExpenseDescription(value),
+        date: (value: string) => validateDate(value)
+      };
+
+      // Validate all form fields
+      const validationResults = validateFormData(data, validationRules);
+      
+      // Check if form is valid
+      const formIsValid = isFormValid(validationResults);
+      
+      // Extract error messages
+      const validationErrors = getValidationErrors(validationResults);
+      setErrors(validationErrors);
+      
+      return formIsValid;
+    } catch (error) {
+      logError(error, 'validating expense form');
+      setErrors({ description: 'Validation error occurred. Please try again.' });
+      return false;
     }
-
-    // Validate amount (positive number)
-    const amount = parseFloat(data.amount);
-    if (!data.amount || isNaN(amount) || amount <= 0) {
-      newErrors.amount = 'Amount must be a positive number';
-    }
-
-    // Validate description (non-empty)
-    if (!data.description || data.description.trim().length === 0) {
-      newErrors.description = 'Description is required';
-    }
-
-    // Validate date (valid date)
-    if (!data.date) {
-      newErrors.date = 'Date is required';
-    } else {
-      const dateObj = new Date(data.date);
-      if (isNaN(dateObj.getTime())) {
-        newErrors.date = 'Please enter a valid date';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   /**
@@ -123,7 +133,7 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
   };
 
   /**
-   * Handles adding a new expense
+   * Handles adding a new expense with comprehensive error handling
    */
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,31 +145,36 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
     const amount = parseFloat(formData.amount);
     const date = new Date(formData.date);
 
-    try {
-      // Optimistic update
-      updateOptimisticCategories({
-        type: 'add',
-        categoryId: formData.categoryId,
-        amount,
-        description: formData.description,
-        date: formData.date
-      });
+    startTransition(async () => {
+      try {
+        // Optimistic update
+        updateOptimisticCategories({
+          type: 'add',
+          categoryId: formData.categoryId,
+          amount,
+          description: formData.description.trim(),
+          date: formData.date
+        });
 
-      // Actual update
-      const updatedCategories = addExpense(categories, formData.categoryId, amount, formData.description, date);
-      onCategoriesChange(updatedCategories);
+        // Actual update
+        const updatedCategories = addExpense(categories, formData.categoryId, amount, formData.description.trim(), date);
+        onCategoriesChange(updatedCategories);
 
-      // Reset form
-      setFormData({
-        categoryId: '',
-        amount: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-      });
-    } catch (error) {
-      console.error('Error adding expense:', error);
-      // The optimistic update will be reverted automatically
-    }
+        // Reset form on success
+        setFormData({
+          categoryId: '',
+          amount: '',
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        });
+        setErrors({});
+      } catch (error) {
+        logError(error, 'adding expense');
+        // Set a general error message
+        setErrors({ description: 'Failed to add expense. Please try again.' });
+        // The optimistic update will be reverted automatically
+      }
+    });
   };
 
   /**
@@ -176,7 +191,7 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
   };
 
   /**
-   * Handles updating an existing expense
+   * Handles updating an existing expense with comprehensive error handling
    */
   const handleUpdateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,52 +203,60 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
     const amount = parseFloat(formData.amount);
     const date = new Date(formData.date);
 
-    try {
-      // Optimistic update
-      updateOptimisticCategories({
-        type: 'update',
-        expense: editingExpense,
-        amount,
-        description: formData.description,
-        date: formData.date
-      });
+    startTransition(async () => {
+      try {
+        // Optimistic update
+        updateOptimisticCategories({
+          type: 'update',
+          expense: editingExpense,
+          amount,
+          description: formData.description.trim(),
+          date: formData.date
+        });
 
-      // Actual update
-      const updatedCategories = updateExpense(categories, editingExpense.id, amount, formData.description, date);
-      onCategoriesChange(updatedCategories);
+        // Actual update
+        const updatedCategories = updateExpense(categories, editingExpense.id, amount, formData.description.trim(), date);
+        onCategoriesChange(updatedCategories);
 
-      // Reset form and editing state
-      setEditingExpense(null);
-      setFormData({
-        categoryId: '',
-        amount: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-      });
-    } catch (error) {
-      console.error('Error updating expense:', error);
-      // The optimistic update will be reverted automatically
-    }
+        // Reset form and editing state on success
+        setEditingExpense(null);
+        setFormData({
+          categoryId: '',
+          amount: '',
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        });
+        setErrors({});
+      } catch (error) {
+        logError(error, 'updating expense');
+        // Set a general error message
+        setErrors({ description: 'Failed to update expense. Please try again.' });
+        // The optimistic update will be reverted automatically
+      }
+    });
   };
 
   /**
-   * Handles deleting an expense
+   * Handles deleting an expense with comprehensive error handling
    */
   const handleDeleteExpense = async (expenseId: string) => {
-    try {
-      // Optimistic update
-      updateOptimisticCategories({
-        type: 'delete',
-        expenseId
-      });
+    startTransition(async () => {
+      try {
+        // Optimistic update
+        updateOptimisticCategories({
+          type: 'delete',
+          expenseId
+        });
 
-      // Actual update
-      const updatedCategories = deleteExpense(categories, expenseId);
-      onCategoriesChange(updatedCategories);
-    } catch (error) {
-      console.error('Error deleting expense:', error);
-      // The optimistic update will be reverted automatically
-    }
+        // Actual update
+        const updatedCategories = deleteExpense(categories, expenseId);
+        onCategoriesChange(updatedCategories);
+      } catch (error) {
+        logError(error, 'deleting expense');
+        // The optimistic update will be reverted automatically
+        // Could show a toast notification here in a real app
+      }
+    });
   };
 
   /**
@@ -271,26 +294,42 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
   const expensesByCategory = getExpensesByCategory();
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        {editingExpense ? 'Edit Expense' : 'Track Expenses'}
-      </h2>
+    <div className="card-elevated p-6 lg:p-8 h-fit">
+      <div className="flex items-center space-x-3 mb-8">
+        <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-lg">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+        </div>
+        <h2 className="text-2xl lg:text-3xl font-bold text-gray-800">
+          {editingExpense ? 'Edit Expense' : 'Track Expenses'}
+        </h2>
+      </div>
 
       {/* Expense Form */}
-      <form onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense} className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <form onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense} className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+        <div className="flex items-center space-x-2 mb-6">
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={editingExpense ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">
+            {editingExpense ? 'Update Expense' : 'Add New Expense'}
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Category Selection */}
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
               Category
             </label>
             <select
               id="category"
               value={formData.categoryId}
               onChange={(e) => handleInputChange('categoryId', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.categoryId ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`input-field ${errors.categoryId ? 'input-error' : ''} ${isPending ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              disabled={isPending}
             >
               <option value="">Select a category</option>
               {optimisticCategories.map(category => (
@@ -300,13 +339,18 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
               ))}
             </select>
             {errors.categoryId && (
-              <p className="text-red-500 text-xs mt-1">{errors.categoryId}</p>
+              <div className="mt-2 flex items-center space-x-2">
+                <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-red-500 text-sm">{errors.categoryId}</p>
+              </div>
             )}
           </div>
 
           {/* Amount Input */}
           <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-2">
               Amount (KSh)
             </label>
             <input
@@ -316,21 +360,27 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
               onChange={(e) => handleInputChange('amount', e.target.value)}
               placeholder="0.00"
               min="0"
+              max="1000000"
               step="0.01"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.amount ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`input-field ${errors.amount ? 'input-error' : ''} ${isPending ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              disabled={isPending}
+              autoComplete="off"
             />
             {errors.amount && (
-              <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
+              <div className="mt-2 flex items-center space-x-2">
+                <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-red-500 text-sm">{errors.amount}</p>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Description Input */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
               Description
             </label>
             <input
@@ -338,19 +388,25 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Enter expense description"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              }`}
+              placeholder="e.g., Grocery shopping, Bus fare"
+              maxLength={100}
+              className={`input-field ${errors.description ? 'input-error' : ''} ${isPending ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              disabled={isPending}
+              autoComplete="off"
             />
             {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+              <div className="mt-2 flex items-center space-x-2">
+                <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-red-500 text-sm">{errors.description}</p>
+              </div>
             )}
           </div>
 
           {/* Date Input */}
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="date" className="block text-sm font-semibold text-gray-700 mb-2">
               Date
             </label>
             <input
@@ -358,30 +414,43 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
               id="date"
               value={formData.date}
               onChange={(e) => handleInputChange('date', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.date ? 'border-red-500' : 'border-gray-300'
-              }`}
+              max={new Date().toISOString().split('T')[0]}
+              className={`input-field ${errors.date ? 'input-error' : ''} ${isPending ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              disabled={isPending}
             />
             {errors.date && (
-              <p className="text-red-500 text-xs mt-1">{errors.date}</p>
+              <div className="mt-2 flex items-center space-x-2">
+                <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-red-500 text-sm">{errors.date}</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* Form Buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+            disabled={isPending}
+            className="btn-primary flex items-center justify-center space-x-2 flex-1 sm:flex-none"
           >
-            {editingExpense ? 'Update Expense' : 'Add Expense'}
+            {isPending && (
+              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            <span>{isPending ? 'Processing...' : editingExpense ? 'Update Expense' : 'Add Expense'}</span>
           </button>
           
           {editingExpense && (
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+              disabled={isPending}
+              className="btn-secondary flex-1 sm:flex-none"
             >
               Cancel
             </button>
@@ -391,35 +460,61 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
 
       {/* Expenses List */}
       <div>
-        <h3 className="text-lg font-medium text-gray-800 mb-3">Recent Expenses</h3>
+        <div className="flex items-center space-x-2 mb-6">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 8l2 2 4-4" />
+          </svg>
+          <h3 className="text-xl font-bold text-gray-800">Recent Expenses</h3>
+        </div>
         
         {Object.keys(expensesByCategory).length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
-            No expenses recorded yet. Add your first expense above.
-          </p>
+          <div className="text-center py-12 px-6">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <p className="text-gray-500 text-lg font-medium mb-2">No expenses recorded yet</p>
+            <p className="text-gray-400 text-sm">Add your first expense above to start tracking</p>
+          </div>
         ) : (
-          <div className="space-y-4">
-            {Object.values(expensesByCategory).map(({ category, expenses }) => (
-              <div key={category.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium text-gray-800">{category.name}</h4>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">
+          <div className="space-y-6">
+            {Object.values(expensesByCategory).map(({ category, expenses }, index) => (
+              <div key={category.id} className="card-subtle p-5 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      category.actualSpent > category.plannedAmount ? 'bg-red-500' : 
+                      category.actualSpent / category.plannedAmount >= 0.8 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}>
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-800 text-lg">{category.name}</h4>
+                      <div className="text-sm text-gray-500">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-800">
                       KSh {category.actualSpent.toLocaleString()}
-                    </span>
-                    <span className="text-gray-400"> / </span>
-                    <span>KSh {category.plannedAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      of KSh {category.plannedAmount.toLocaleString()}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  {expenses.map(expense => (
-                    <ExpenseItem
-                      key={expense.id}
-                      expense={expense}
-                      onEdit={handleEditExpense}
-                      onDelete={handleDeleteExpense}
-                    />
+                <div className="space-y-3">
+                  {expenses.map((expense, expenseIndex) => (
+                    <div key={expense.id} className="animate-fade-in" style={{ animationDelay: `${(index * 0.1) + (expenseIndex * 0.05)}s` }}>
+                      <ExpenseItem
+                        expense={expense}
+                        onEdit={handleEditExpense}
+                        onDelete={handleDeleteExpense}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
