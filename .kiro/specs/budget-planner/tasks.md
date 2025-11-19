@@ -65,7 +65,12 @@
   - Implement getCategorySpending function
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 6. Implement storage service utility
+- [x] 6. Implement storage service utility
+
+
+
+
+
   - Create utils/storageService.ts with LocalStorage functions
   - Implement saveData function with error handling
   - Implement loadData function with type safety
@@ -73,7 +78,12 @@
   - Add error handling for quota exceeded and unavailable storage
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 7. Create constants file
+- [x] 7. Create constants file
+
+
+
+
+
   - Create constants/index.ts with default categories
   - Define default categories: House Rent, Transport, Savings, Food, Other Expenditures
   - Define tax rates and calculation constants
