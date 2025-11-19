@@ -136,7 +136,7 @@ export default function BudgetPlannerContent() {
               <h2 className="text-2xl font-bold text-gray-800">How to Use Budget Planner</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-              <div className="group p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+              <div className="group p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
                   <div className="font-bold text-blue-800">Enter Income</div>
@@ -145,7 +145,7 @@ export default function BudgetPlannerContent() {
                   Input your gross monthly salary to calculate net pay after Kenyan statutory deductions (SHA, PAYEE, Housing Levy).
                 </p>
               </div>
-              <div className="group p-5 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+              <div className="group p-5 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
                   <div className="font-bold text-green-800">Plan Budget</div>
@@ -154,7 +154,7 @@ export default function BudgetPlannerContent() {
                   Allocate your net pay across budget categories like rent, transport, savings, and food.
                 </p>
               </div>
-              <div className="group p-5 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+              <div className="group p-5 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
                   <div className="font-bold text-orange-800">Track Expenses</div>
@@ -163,7 +163,7 @@ export default function BudgetPlannerContent() {
                   Record your actual expenses in each category to monitor spending against your budget.
                 </p>
               </div>
-              <div className="group p-5 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+              <div className="group p-5 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
                   <div className="font-bold text-purple-800">Monitor Health</div>

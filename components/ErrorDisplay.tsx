@@ -80,7 +80,7 @@ export default function ErrorDisplay({ error, onRetry, onDismiss, className = ''
   return (
     <div className={`rounded-md border p-4 ${getErrorColor()} ${className}`}>
       <div className="flex">
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           {getErrorIcon()}
         </div>
         <div className="ml-3 flex-1">
