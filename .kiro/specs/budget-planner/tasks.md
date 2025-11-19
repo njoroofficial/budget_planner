@@ -36,7 +36,12 @@
   - Implement calculateNetPay function that returns complete PayBreakdown
   - _Requirements: 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 4. Implement budget manager utility
+- [x] 4. Implement budget manager utility
+
+
+
+
+
   - Create utils/budgetManager.ts with category management functions
   - Implement createCategory function with duplicate name validation
   - Implement updateCategory function
@@ -45,7 +50,12 @@
   - Implement getRemainingBudget function
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3_
 
-- [ ] 5. Implement expense tracker utility
+- [x] 5. Implement expense tracker utility
+
+
+
+
+
   - Create utils/expenseTracker.ts with expense management functions
   - Implement addExpense function that updates category actualSpent
   - Implement updateExpense function
