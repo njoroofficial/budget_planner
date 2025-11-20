@@ -1,64 +1,35 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createCategory, updateCategory, deleteCategory, getAllCategories } from '../utils/budgetManager';
+import { createCategory, updateCategory, deleteCategory } from '../utils/budgetManager';
 import { addExpense, updateExpense, deleteExpense } from '../utils/expenseTracker';
 
-/**
- * Server Actions for Budget Planner data mutations
- * These actions handle form submissions, data validation, and Supabase persistence
- */
-
-// Action result types for consistent error handling
 export type ActionResult = {
   success: boolean;
   message: string;
   data?: any;
 };
 
-/**
- * Server Action to create a new budget category
- * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing category name and planned amount
- * @returns ActionResult with success status and message
- */
-export async function createCategoryAction(
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
+export async function createCategoryAction(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
-    // Extract and validate form data
     const name = formData.get('name') as string;
     const plannedAmountStr = formData.get('plannedAmount') as string;
 
-    // Input validation
     if (!name || name.trim().length === 0) {
-      return {
-        success: false,
-        message: 'Category name is required'
-      };
+      return { success: false, message: 'Category name is required' };
     }
 
     if (!plannedAmountStr) {
-      return {
-        success: false,
-        message: 'Planned amount is required'
-      };
+      return { success: false, message: 'Planned amount is required' };
     }
 
     const plannedAmount = parseFloat(plannedAmountStr);
     
     if (isNaN(plannedAmount) || plannedAmount < 0) {
-      return {
-        success: false,
-        message: 'Planned amount must be a valid positive number'
-      };
+      return { success: false, message: 'Planned amount must be a valid positive number' };
     }
 
-    // Create new category in Supabase
-    const newCategory = await createCategory(name, plannedAmount);
-
-    // Revalidate the page to reflect changes
+    const newCategory = createCategory(name, plannedAmount);
     revalidatePath('/');
 
     return {
@@ -66,7 +37,6 @@ export async function createCategoryAction(
       message: 'Category created successfully',
       data: newCategory
     };
-
   } catch (error) {
     return {
       success: false,
@@ -75,16 +45,7 @@ export async function createCategoryAction(
   }
 }
 
-/**
- * Server Action to update an existing budget category
- * @param prevState - Previous action state (for useActionState)
- * @param formData - Form data containing category ID, name, and planned amount
- * @returns ActionResult with success status and message
- */
-export async function updateCategoryAction(
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateCategoryAction(prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
     // Extract and validate form data
     const id = formData.get('id') as string;
@@ -122,8 +83,8 @@ export async function updateCategoryAction(
       };
     }
 
-    // Update category in Supabase
-    const updatedCategory = await updateCategory(id, name, plannedAmount);
+    // Update category
+    const updatedCategory = updateCategory(id, name, plannedAmount);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -164,8 +125,8 @@ export async function deleteCategoryAction(
       };
     }
 
-    // Delete category from Supabase
-    await deleteCategory(id);
+    // Delete category
+    deleteCategory(id);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -247,8 +208,8 @@ export async function addExpenseAction(
       };
     }
 
-    // Add expense to Supabase
-    const newExpense = await addExpense(categoryId, amount, description, date);
+    // Add expense
+    const newExpense = addExpense(categoryId, amount, description, date);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -331,8 +292,8 @@ export async function updateExpenseAction(
       };
     }
 
-    // Update expense in Supabase
-    const updatedExpense = await updateExpense(id, amount, description, date);
+    // Update expense
+    const updatedExpense = updateExpense(id, amount, description, date);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');
@@ -373,8 +334,8 @@ export async function deleteExpenseAction(
       };
     }
 
-    // Delete expense from Supabase
-    await deleteExpense(id);
+    // Delete expense
+    deleteExpense(id);
 
     // Revalidate the page to reflect changes
     revalidatePath('/');

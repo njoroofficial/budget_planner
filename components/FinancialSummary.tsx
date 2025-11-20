@@ -23,7 +23,7 @@ export default function FinancialSummary({ income, categories }: FinancialSummar
   const grossPay = income?.grossPay || 0;
   const netPay = income?.netPay || 0;
   const totalPlanned = getTotalAllocated(categories);
-  const totalSpent = getTotalSpent(categories);
+  const totalSpent = getTotalSpent();
   const totalSavings = netPay - totalSpent;
   const spentPercentage = netPay > 0 ? (totalSpent / netPay) * 100 : 0;
   const plannedPercentage = netPay > 0 ? (totalPlanned / netPay) * 100 : 0;

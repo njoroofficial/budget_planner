@@ -3,6 +3,7 @@
 import { useState, useOptimistic, useTransition } from 'react';
 import { Category, Expense } from '../types';
 import ExpenseItem from './ExpenseItem';
+import { getAllCategories } from '../utils/budgetManager';
 import { addExpense, updateExpense, deleteExpense } from '../utils/expenseTracker';
 import { 
   validateExpenseAmount, 
@@ -59,30 +60,9 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
   const [optimisticCategories, updateOptimisticCategories] = useOptimistic(
     categories,
     (currentCategories: Category[], action: { type: 'add' | 'update' | 'delete'; expense?: Expense; expenseId?: string; categoryId?: string; amount?: number; description?: string; date?: string }) => {
-      try {
-        switch (action.type) {
-          case 'add':
-            if (action.categoryId && action.amount && action.description && action.date) {
-              return addExpense(currentCategories, action.categoryId, action.amount, action.description, new Date(action.date));
-            }
-            return currentCategories;
-          case 'update':
-            if (action.expense && action.amount && action.description && action.date) {
-              return updateExpense(currentCategories, action.expense.id, action.amount, action.description, new Date(action.date));
-            }
-            return currentCategories;
-          case 'delete':
-            if (action.expenseId) {
-              return deleteExpense(currentCategories, action.expenseId);
-            }
-            return currentCategories;
-          default:
-            return currentCategories;
-        }
-      } catch (error) {
-        // If optimistic update fails, return current state
-        return currentCategories;
-      }
+      // For localStorage, we just return current state
+      // The actual update will reload from storage
+      return currentCategories;
     }
   );
 
@@ -157,7 +137,8 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
         });
 
         // Actual update
-        const updatedCategories = addExpense(categories, formData.categoryId, amount, formData.description.trim(), date);
+        const newExpense = addExpense(formData.categoryId, amount, formData.description.trim(), date);
+        const updatedCategories = getAllCategories(); // Reload from storage
         onCategoriesChange(updatedCategories);
 
         // Reset form on success
@@ -215,7 +196,8 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
         });
 
         // Actual update
-        const updatedCategories = updateExpense(categories, editingExpense.id, amount, formData.description.trim(), date);
+        const updatedExpense = updateExpense(editingExpense.id, amount, formData.description.trim(), date);
+        const updatedCategories = getAllCategories(); // Reload from storage
         onCategoriesChange(updatedCategories);
 
         // Reset form and editing state on success
@@ -249,7 +231,8 @@ export default function ExpenseTracker({ categories, onCategoriesChange }: Expen
         });
 
         // Actual update
-        const updatedCategories = deleteExpense(categories, expenseId);
+        deleteExpense(expenseId);
+        const updatedCategories = getAllCategories(); // Reload from storage
         onCategoriesChange(updatedCategories);
       } catch (error) {
         logError(error, 'deleting expense');

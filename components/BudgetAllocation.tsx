@@ -107,31 +107,27 @@ export default function BudgetAllocation({ categories, income, onCategoriesChang
     
     startTransition(() => {
       try {
-        let updatedCategories: Category[];
-        
         if (editingCategory) {
           // Update existing category
-          updatedCategories = updateCategory(categories, editingCategory.id, formData.name.trim(), amount);
+          const updatedCategory = updateCategory(editingCategory.id, formData.name.trim(), amount);
+          
+          // Update categories array
+          const updatedCategories = categories.map(cat => 
+            cat.id === editingCategory.id ? updatedCategory : cat
+          );
           
           // Optimistic update
-          const updatedCategory = { ...editingCategory, name: formData.name.trim(), plannedAmount: amount };
           addOptimisticCategory({ type: 'update', category: updatedCategory });
+          onCategoriesChange(updatedCategories);
         } else {
           // Create new category
-          updatedCategories = createCategory(categories, formData.name.trim(), amount);
+          const newCategory = createCategory(formData.name.trim(), amount);
           
           // Optimistic update
-          const newCategory: Category = {
-            id: `temp_${Date.now()}`,
-            name: formData.name.trim(),
-            plannedAmount: amount,
-            actualSpent: 0,
-            expenses: []
-          };
           addOptimisticCategory({ type: 'add', category: newCategory });
+          onCategoriesChange([...categories, newCategory]);
         }
         
-        onCategoriesChange(updatedCategories);
         resetForm();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An error occurred';
@@ -164,7 +160,11 @@ export default function BudgetAllocation({ categories, income, onCategoriesChang
   const handleDelete = (categoryId: string) => {
     startTransition(() => {
       try {
-        const updatedCategories = deleteCategory(categories, categoryId);
+        // Delete category
+        deleteCategory(categoryId);
+        
+        // Update categories array
+        const updatedCategories = categories.filter(cat => cat.id !== categoryId);
         
         // Optimistic update
         addOptimisticCategory({ type: 'delete', id: categoryId });

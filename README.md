@@ -8,8 +8,9 @@ A personal finance management application built with Next.js that helps track in
 - 📊 **Budget Allocation** - Plan your spending across different categories
 - 📝 **Expense Tracking** - Record and monitor actual expenses
 - 📈 **Financial Summary** - View savings, spending percentage, and budget health
-- 💾 **Database Storage** - All data is stored in Supabase for persistence and historical tracking
+- 💾 **Local Storage** - All data is stored in your browser for instant access
 - 🇰🇪 **Kenyan Tax Compliance** - Based on 2024 statutory rates
+- 🚀 **No Setup Required** - Works offline, no database configuration needed
 
 ## Getting Started
 
@@ -17,7 +18,7 @@ A personal finance management application built with Next.js that helps track in
 
 - Node.js 18+ installed on your machine
 - npm, yarn, pnpm, or bun package manager
-- A free Supabase account (https://supabase.com)
+- A modern web browser with localStorage enabled
 
 
 ### Installation
@@ -34,24 +35,7 @@ yarn install
 pnpm install
 ```
 
-3. Set up Supabase:
-
-   a. Create a new project at <https://supabase.com>
-   
-   b. Go to SQL Editor and run the schema from `database/schema.sql`
-   
-   c. Copy `.env.example` to `.env.local`:
-
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   d. Update `.env.local` with your Supabase credentials:
-   - Get `NEXT_PUBLIC_SUPABASE_URL` from Project Settings > API
-   - Get `NEXT_PUBLIC_SUPABASE_ANON_KEY` from Project Settings > API
-   - Keep `NEXT_PUBLIC_USER_ID` as is (or generate your own UUID)
-
-4. Run the development server:
+3. Run the development server:
 
 ```bash
 npm run dev
@@ -61,43 +45,57 @@ yarn dev
 pnpm dev
 ```
 
-5. Open <http://localhost:3000> in your browser
+4. Open <http://localhost:3000> in your browser
 
-## Database Setup
+5. Start budgeting! 🎉
+   - Enter your income
+   - Create budget categories
+   - Track your expenses
+   - Monitor your financial health
 
-### Setting Up Supabase
+## Data Storage
 
-1. **Create a Supabase Project**
-   - Go to <https://supabase.com> and sign up/login
-   - Click "New Project"
-   - Choose a name and password for your database
-   - Select a region close to you
-   - Wait for the project to be provisioned
+### Local Browser Storage
 
-2. **Run Database Migration**
-   - In your Supabase dashboard, go to "SQL Editor"
-   - Click "New query"
-   - Copy the entire contents of `database/schema.sql`
-   - Paste it into the SQL Editor
-   - Click "Run" or press Ctrl+Enter
-   - Verify that tables were created by checking the "Table Editor"
+All your data is stored locally in your browser using localStorage:
+- **Automatic Saving** - Changes are saved instantly
+- **Offline Access** - Works without internet connection
+- **Privacy** - Data never leaves your device
+- **Fast Performance** - No network delays
 
-3. **Configure Environment Variables**
-   - In Supabase, go to Project Settings > API
-   - Copy your Project URL and paste as `NEXT_PUBLIC_SUPABASE_URL`
-   - Copy your `anon` `public` key and paste as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - Save the `.env.local` file
+### Storage Keys
+- `budget_planner_income` - Your income and deductions
+- `budget_planner_categories` - Budget categories and expenses
 
-### Migrating from localStorage (Optional)
+### Data Backup
 
-If you were using a previous version with localStorage:
+**Backing up your data:**
+```javascript
+// In browser console (F12)
+const income = localStorage.getItem('budget_planner_income');
+const categories = localStorage.getItem('budget_planner_categories');
+console.log(JSON.stringify({ income, categories }, null, 2));
+// Copy the output and save to a file
+```
 
-1. Open your app in the browser
-2. Open the browser console (F12)
-3. Run: `migrateLocalStorageToSupabase()`
-4. Wait for the migration to complete
-5. Refresh the page to verify your data
-6. Once verified, you can clear localStorage:
+**Restoring from backup:**
+```javascript
+// In browser console (F12)
+const backup = { income: {...}, categories: [...] }; // Your backup data
+localStorage.setItem('budget_planner_income', JSON.stringify(backup.income));
+localStorage.setItem('budget_planner_categories', JSON.stringify(backup.categories));
+// Refresh the page
+```
+
+### Clearing Data
+
+```javascript
+// In browser console (F12)
+localStorage.removeItem('budget_planner_income');
+localStorage.removeItem('budget_planner_categories');
+// Or clear everything:
+localStorage.clear();
+```
 
    ```javascript
    localStorage.removeItem("budget_planner_income")
