@@ -214,15 +214,20 @@ export async function getAllCategoriesWithExpenses(): Promise<Category[]> {
 export async function createCategoryInDb(name: string, plannedAmount: number): Promise<Category> {
   try {
     const userId = await requireAuth();
+    console.log('Creating category with userId:', userId);
 
     // Get the highest display_order to append new category at the end
-    const { data: maxOrderData } = await supabase
+    const { data: maxOrderData, error: maxOrderError } = await supabase
       .from('categories')
       .select('display_order')
       .eq('user_id', userId)
       .order('display_order', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (maxOrderError) {
+      console.error('Error fetching max display order:', maxOrderError);
+    }
 
     const nextOrder = maxOrderData ? (maxOrderData as any).display_order + 1 : 0;
 
@@ -234,6 +239,8 @@ export async function createCategoryInDb(name: string, plannedAmount: number): P
       display_order: nextOrder
     };
 
+    console.log('Inserting category data:', categoryData);
+
     const { data, error } = await supabase
       .from('categories')
       // @ts-expect-error - Supabase type inference issue with generic types
@@ -242,13 +249,29 @@ export async function createCategoryInDb(name: string, plannedAmount: number): P
       .single();
 
     if (error) {
+      console.error('Supabase insert error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      
       if (error.code === '23505') {
         // Unique constraint violation
         throw new Error('Category name already exists');
       }
-      throw error;
+      if (error.code === '42501') {
+        // Permission denied
+        throw new Error('Database permission denied. Please check RLS policies or disable RLS.');
+      }
+      throw new Error(`Database error: ${error.message}`);
     }
 
+    if (!data) {
+      throw new Error('No data returned from database insert');
+    }
+
+    console.log('Category created successfully:', data);
     return mapDbCategoryToCategory(data, []);
   } catch (error) {
     console.error('Error creating category:', error);

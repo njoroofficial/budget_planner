@@ -12,8 +12,10 @@ interface IncomeSectionProps {
   initialGrossPay?: number;
 }
 
-export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: IncomeSectionProps) {
-  const [grossPay, setGrossPay] = useState<string>(initialGrossPay > 0 ? initialGrossPay.toString() : '');
+export default function IncomeSection({ onIncomeChange, initialGrossPay }: IncomeSectionProps) {
+  const [grossPay, setGrossPay] = useState<string>(
+    initialGrossPay && initialGrossPay > 0 ? initialGrossPay.toString() : ''
+  );
   const [payBreakdown, setPayBreakdown] = useState<PayBreakdown | null>(null);
   const [error, setError] = useState<string>('');
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
@@ -28,7 +30,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
 
   // Load initial pay breakdown if initialGrossPay is provided
   useEffect(() => {
-    if (initialGrossPay > 0) {
+    if (initialGrossPay && initialGrossPay > 0) {
       calculateBreakdown(initialGrossPay.toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +146,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
         </label>
         <div className="flex gap-3">
           <div className="relative group flex-1">
-            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+            <span className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-600 font-semibold text-lg pointer-events-none z-10">
               {APP_CONSTANTS.CURRENCY}
             </span>
             <input
@@ -154,7 +156,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
               onChange={handleGrossPayChange}
               onKeyPress={handleKeyPress}
               placeholder="40,000"
-              className={`input-field pl-16 pr-4 py-4 text-lg font-semibold ${
+              className={`input-field pl-24 pr-4 py-4 text-lg font-semibold ${
                 error ? 'input-error' : ''
               } ${isCalculating ? 'bg-blue-50 border-blue-300' : ''} group-hover:shadow-md w-full`}
               disabled={isCalculating}

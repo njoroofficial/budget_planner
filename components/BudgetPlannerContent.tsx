@@ -93,7 +93,7 @@ export default function BudgetPlannerContent() {
           <section className="animate-slide-up">
             <IncomeSection
               onIncomeChange={updateIncome}
-              initialGrossPay={appState.income?.grossPay || 0}
+              initialGrossPay={appState.income?.grossPay && appState.income.grossPay > 0 ? appState.income.grossPay : undefined}
             />
           </section>
 

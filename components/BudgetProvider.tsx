@@ -4,7 +4,9 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { AppState, Category, PayBreakdown } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/constants';
 import { handleStorageError, logError, getErrorMessage } from '@/utils/errorHandling';
-import { saveData, loadData, isStorageAvailable } from '@/utils/storageService';
+import { getCurrentIncome, saveIncome, getAllCategoriesWithExpenses } from '@/utils/budgetRepository';
+import { createCategory } from '@/utils/budgetManager';
+import { getCurrentUserId } from '@/utils/supabaseClient';
 
 /**
  * Context interface for budget state management
@@ -20,12 +22,6 @@ interface BudgetContextType {
   retryDataLoad: () => void;
   storageAvailable: boolean;
 }
-
-// Storage keys for local storage
-const STORAGE_KEYS = {
-  INCOME: 'budget_planner_income',
-  CATEGORIES: 'budget_planner_categories'
-};
 
 /**
  * Create the Budget Context
@@ -55,60 +51,68 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   /**
    * Initialize default categories if none exist
    */
-  const initializeDefaultCategories = (): Category[] => {
-    return DEFAULT_CATEGORIES.map((name, index) => ({
-      id: `default_${index + 1}`,
-      name,
-      plannedAmount: 0,
-      actualSpent: 0,
-      expenses: []
-    }));
+  const initializeDefaultCategories = async (): Promise<Category[]> => {
+    const createdCategories: Category[] = [];
+    
+    for (const name of DEFAULT_CATEGORIES) {
+      try {
+        const category = await createCategory(name, 0);
+        createdCategories.push(category);
+      } catch (error) {
+        console.error(`Failed to create default category "${name}":`, error);
+      }
+    }
+    
+    return createdCategories;
   };
 
   /**
-   * Load initial data from local storage on component mount
+   * Load initial data from database on component mount
    */
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Check if storage is available
-      const available = isStorageAvailable();
+      // Check if user ID is configured
+      const userId = await getCurrentUserId();
+      const available = !!userId;
       setStorageAvailable(available);
 
       if (!available) {
-        // Use default state if storage is not available
+        // User ID not configured
         const fallbackState: AppState = {
           income: null,
-          categories: initializeDefaultCategories()
+          categories: []
         };
         setAppState(fallbackState);
-        setError('Local storage is not available. Your data will not be saved.');
+        setError('User ID not configured. Please set NEXT_PUBLIC_USER_ID in your .env.local file.');
         return;
       }
 
-      // Load income and categories from local storage
-      const income = loadData<PayBreakdown>(STORAGE_KEYS.INCOME);
-      const categories = loadData<Category[]>(STORAGE_KEYS.CATEGORIES);
+      // Load income and categories from database
+      const income = await getCurrentIncome();
+      let categories = await getAllCategoriesWithExpenses();
 
-      // If no categories exist, use default categories (for first-time users)
-      const finalCategories = categories && categories.length > 0 ? categories : initializeDefaultCategories();
+      // If no categories exist, initialize default categories (for first-time users)
+      if (!categories || categories.length === 0) {
+        categories = await initializeDefaultCategories();
+      }
 
       setAppState({
         income,
-        categories: finalCategories
+        categories
       });
 
     } catch (err) {
       const appError = handleStorageError(err);
-      logError(appError, 'loading initial budget data from local storage');
+      logError(appError, 'loading initial budget data from database');
       setError(getErrorMessage(appError));
       
-      // Fallback to default state
+      // Fallback to empty state
       const fallbackState: AppState = {
         income: null,
-        categories: initializeDefaultCategories()
+        categories: []
       };
       setAppState(fallbackState);
     } finally {
@@ -121,19 +125,19 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
   }, []);
 
   /**
-   * Refresh data from local storage
+   * Refresh data from database
    */
   const refreshData = async () => {
     await loadInitialData();
   };
 
   /**
-   * Update income in the app state and save to local storage
+   * Update income in the app state and save to database
    */
   const updateIncome = async (income: PayBreakdown | null) => {
     try {
       if (income && storageAvailable) {
-        saveData(STORAGE_KEYS.INCOME, income);
+        await saveIncome(income);
       }
       setAppState(prevState => ({
         ...prevState,
@@ -141,29 +145,22 @@ export function BudgetProvider({ children }: BudgetProviderProps) {
       }));
     } catch (err) {
       const appError = handleStorageError(err);
-      logError(appError, 'saving income to local storage');
+      logError(appError, 'saving income to database');
       setError(getErrorMessage(appError));
       throw appError;
     }
   };
 
   /**
-   * Update categories in the app state and save to local storage
+   * Update categories in the app state (local state only)
+   * Note: Categories should be updated through repository functions
+   * This is primarily for UI state synchronization
    */
   const updateCategories = (categories: Category[]) => {
-    try {
-      if (storageAvailable) {
-        saveData(STORAGE_KEYS.CATEGORIES, categories);
-      }
-      setAppState(prevState => ({
-        ...prevState,
-        categories
-      }));
-    } catch (err) {
-      const appError = handleStorageError(err);
-      logError(appError, 'saving categories to local storage');
-      setError(getErrorMessage(appError));
-    }
+    setAppState(prevState => ({
+      ...prevState,
+      categories
+    }));
   };
 
   /**

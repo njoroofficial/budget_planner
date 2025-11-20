@@ -5,38 +5,70 @@
  * Run this once after setting up Supabase to preserve existing user data.
  * 
  * Usage:
- * 1. Ensure you're logged in to the application (or using demo mode)
- * 2. Open browser console
- * 3. Run: migrateLocalStorageToSupabase()
+ * 1. Open browser console on your Budget Planner app
+ * 2. Run: migrateLocalStorageToSupabase()
+ * 3. Follow the console prompts
  */
 
 import { saveIncome } from './budgetRepository';
 import { createCategoryInDb } from './budgetRepository';
 import { addExpenseToDb } from './expenseRepository';
-import type { AppState, Category, Expense, PayBreakdown } from '@/types';
+import type { Category, Expense, PayBreakdown } from '@/types';
+
+// Old localStorage keys
+const STORAGE_KEYS = {
+  INCOME: 'budget_planner_income',
+  CATEGORIES: 'budget_planner_categories'
+};
 
 /**
- * Load data from localStorage
+ * Load income from localStorage
  */
-function loadFromLocalStorage(): AppState | null {
+function loadIncomeFromLocalStorage(): PayBreakdown | null {
   try {
     if (typeof window === 'undefined' || !window.localStorage) {
       console.error('LocalStorage is not available');
       return null;
     }
 
-    const jsonData = window.localStorage.getItem('budgetPlannerData');
+    const jsonData = window.localStorage.getItem(STORAGE_KEYS.INCOME);
     
     if (!jsonData) {
-      console.log('No data found in localStorage');
+      console.log('No income data found in localStorage');
       return null;
     }
 
-    const data = JSON.parse(jsonData) as AppState;
-    console.log('Loaded data from localStorage:', data);
+    const data = JSON.parse(jsonData) as PayBreakdown;
+    console.log('Loaded income from localStorage:', data);
     return data;
   } catch (error) {
-    console.error('Error loading from localStorage:', error);
+    console.error('Error loading income from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Load categories from localStorage
+ */
+function loadCategoriesFromLocalStorage(): Category[] | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      console.error('LocalStorage is not available');
+      return null;
+    }
+
+    const jsonData = window.localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+    
+    if (!jsonData) {
+      console.log('No categories data found in localStorage');
+      return null;
+    }
+
+    const data = JSON.parse(jsonData) as Category[];
+    console.log('Loaded categories from localStorage:', data);
+    return data;
+  } catch (error) {
+    console.error('Error loading categories from localStorage:', error);
     return null;
   }
 }
@@ -124,7 +156,7 @@ async function migrateExpenses(expenses: Expense[], newCategoryId: string): Prom
 
 /**
  * Main migration function
- * Call this from the browser console after logging in
+ * Call this from the browser console
  */
 export async function migrateLocalStorageToSupabase(): Promise<void> {
   try {
@@ -133,20 +165,25 @@ export async function migrateLocalStorageToSupabase(): Promise<void> {
     console.log('='.repeat(60));
 
     // Load data from localStorage
-    const localData = loadFromLocalStorage();
+    const localIncome = loadIncomeFromLocalStorage();
+    const localCategories = loadCategoriesFromLocalStorage();
 
-    if (!localData) {
+    if (!localIncome && (!localCategories || localCategories.length === 0)) {
       console.log('No data to migrate. Exiting.');
       return;
     }
 
     // Migrate income
-    console.log('\n1. Migrating income...');
-    await migrateIncome(localData.income);
+    if (localIncome) {
+      console.log('\n1. Migrating income...');
+      await migrateIncome(localIncome);
+    }
 
     // Migrate categories and expenses
-    console.log('\n2. Migrating categories and expenses...');
-    await migrateCategories(localData.categories);
+    if (localCategories && localCategories.length > 0) {
+      console.log('\n2. Migrating categories and expenses...');
+      await migrateCategories(localCategories);
+    }
 
     console.log('\n' + '='.repeat(60));
     console.log('✓ Migration completed successfully!');
@@ -156,7 +193,8 @@ export async function migrateLocalStorageToSupabase(): Promise<void> {
     console.log('2. Verify all your data is present');
     console.log('3. Once confirmed, you can clear localStorage if desired');
     console.log('\nTo clear localStorage (ONLY after verifying data):');
-    console.log('  localStorage.removeItem("budgetPlannerData")');
+    console.log(`  localStorage.removeItem("${STORAGE_KEYS.INCOME}")`);
+    console.log(`  localStorage.removeItem("${STORAGE_KEYS.CATEGORIES}")`);
 
   } catch (error) {
     console.error('\n' + '='.repeat(60));
@@ -174,14 +212,21 @@ export async function migrateLocalStorageToSupabase(): Promise<void> {
  */
 export function backupLocalStorageData(): void {
   try {
-    const localData = loadFromLocalStorage();
+    const income = loadIncomeFromLocalStorage();
+    const categories = loadCategoriesFromLocalStorage();
     
-    if (!localData) {
+    if (!income && (!categories || categories.length === 0)) {
       console.log('No data to backup');
       return;
     }
 
-    const dataStr = JSON.stringify(localData, null, 2);
+    const backupData = {
+      income,
+      categories,
+      exportDate: new Date().toISOString()
+    };
+
+    const dataStr = JSON.stringify(backupData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     

@@ -46,33 +46,35 @@ export function createServerClient() {
 
 /**
  * Helper function to get the current user ID
- * Returns null if not authenticated
+ * For personal use without authentication, returns a fixed user ID from environment
  * 
- * TODO: Replace this stub with actual Supabase Auth integration
- * For now, returns a demo user ID for development
+ * Note: This is a simplified approach for personal applications.
+ * For multi-user applications, implement proper authentication.
  */
 export async function getCurrentUserId(): Promise<string | null> {
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const userId = process.env.NEXT_PUBLIC_USER_ID;
   
-  if (error || !user) {
-    // Redirect to login page
+  if (!userId) {
+    console.error('NEXT_PUBLIC_USER_ID not set in environment variables');
+    console.error('Available env vars:', Object.keys(process.env).filter(k => k.startsWith('NEXT_PUBLIC')));
     return null;
   }
   
-  return user.id;
+  console.log('Retrieved user ID:', userId);
+  return userId;
 }
 
 /**
  * Helper function to ensure user is authenticated
  * Throws error if no user is found
  * 
- * TODO: Integrate with proper authentication flow
+ * Note: For personal use, this just ensures the user ID is configured
  */
 export async function requireAuth(): Promise<string> {
   const userId = await getCurrentUserId();
   
   if (!userId) {
-    throw new Error('Authentication required. Please log in to continue.');
+    throw new Error('User ID not configured. Please set NEXT_PUBLIC_USER_ID in your .env.local file.');
   }
   
   return userId;
