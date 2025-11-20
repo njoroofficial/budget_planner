@@ -145,30 +145,36 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay }: Incom
           Gross Pay (Monthly Salary)
         </label>
         <div className="flex gap-3">
-          <div className="relative group flex-1">
-            <span className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-600 font-semibold text-lg pointer-events-none z-10">
-              {APP_CONSTANTS.CURRENCY}
-            </span>
-            <input
-              id="grossPay"
-              type="text"
-              value={grossPay}
-              onChange={handleGrossPayChange}
-              onKeyPress={handleKeyPress}
-              placeholder="40,000"
-              className={`input-field pl-24 pr-4 py-4 text-lg font-semibold ${
-                error ? 'input-error' : ''
-              } ${isCalculating ? 'bg-blue-50 border-blue-300' : ''} group-hover:shadow-md w-full`}
-              disabled={isCalculating}
-            />
-            {isCalculating && (
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                <svg className="animate-spin w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-            )}
+          <div className="flex-1 flex gap-0 group">
+            <div className="flex items-center justify-center px-4 py-4 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg group-hover:border-blue-400 transition-colors">
+              <span className="text-gray-600 font-medium text-base whitespace-nowrap select-none">
+                {APP_CONSTANTS.CURRENCY}
+              </span>
+            </div>
+            <div className="relative flex-1">
+              <input
+                id="grossPay"
+                type="text"
+                inputMode="decimal"
+                value={grossPay}
+                onChange={handleGrossPayChange}
+                onKeyPress={handleKeyPress}
+                placeholder="40000"
+                className={`w-full px-4 py-4 text-lg font-semibold border ${
+                  error ? 'border-red-500 bg-red-50 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                } ${isCalculating ? 'bg-blue-50 border-blue-300' : 'bg-white'} rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-400 group-hover:border-blue-400`}
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+                disabled={isCalculating}
+              />
+              {isCalculating && (
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                  <svg className="animate-spin w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
           <button
             onClick={handleCalculateClick}
