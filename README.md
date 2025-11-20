@@ -1,8 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# My Personal Budget Planner
+
+A personal finance management application built with Next.js that helps track income, expenses, and budget allocation with automatic Kenyan statutory deductions (SHA, PAYEE, Housing Levy).
+
+## Features
+
+- 💰 **Income Calculator** - Calculate net pay with Kenyan statutory deductions
+- 📊 **Budget Allocation** - Plan your spending across different categories
+- 📝 **Expense Tracking** - Record and monitor actual expenses
+- 📈 **Financial Summary** - View savings, spending percentage, and budget health
+- 💾 **Local Storage** - All data is saved locally in your browser (no authentication required)
+- 🇰🇪 **Kenyan Tax Compliance** - Based on 2024 statutory rates
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ installed on your machine
+- npm, yarn, pnpm, or bun package manager
+
+### Installation
+
+1. Clone the repository or download the source code
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
@@ -10,27 +40,38 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How to Use
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Enter Income** - Input your gross monthly salary to calculate net pay after statutory deductions
+2. **Plan Budget** - Allocate your net pay across budget categories (rent, transport, savings, food, etc.)
+3. **Track Expenses** - Record your actual expenses in each category
+4. **Monitor Health** - Review your financial summary to track savings and spending
 
-## Learn More
+## Data Storage
 
-To learn more about Next.js, take a look at the following resources:
+All your budget data is stored locally in your browser's local storage. No authentication or external database is required. Your data remains private and is only accessible from the browser where you created it.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Note:** Clearing your browser data will delete your budget information. Consider exporting your data regularly if needed.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Technology Stack
 
-## Deploy on Vercel
+- **Framework:** Next.js 16 with App Router
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Storage:** Browser Local Storage
+- **State Management:** React Context API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Build for Production
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+npm start
+```
+
+## License
+
+Personal use project.

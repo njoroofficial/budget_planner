@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Budget Planner - Manage Your Finances",
-  description: "Personal finance management application for Kenyan users to track income, statutory deductions, and expenditures",
+  title: "My Budget Planner - Personal Finance Manager",
+  description: "Personal budget planner to track income, statutory deductions, and expenditures with Kenyan tax calculations",
 };
 
 export default function RootLayout({

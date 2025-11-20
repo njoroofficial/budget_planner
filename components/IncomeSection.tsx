@@ -13,7 +13,7 @@ interface IncomeSectionProps {
 }
 
 export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: IncomeSectionProps) {
-  const [grossPay, setGrossPay] = useState<string>(initialGrossPay.toString());
+  const [grossPay, setGrossPay] = useState<string>(initialGrossPay > 0 ? initialGrossPay.toString() : '');
   const [payBreakdown, setPayBreakdown] = useState<PayBreakdown | null>(null);
   const [error, setError] = useState<string>('');
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
@@ -26,52 +26,56 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
     onIncomeChangeRef.current = onIncomeChange;
   }, [onIncomeChange]);
 
-  // Calculate breakdown when gross pay changes
+  // Load initial pay breakdown if initialGrossPay is provided
   useEffect(() => {
-    const calculateBreakdown = async () => {
-      // Clear previous error
-      setError('');
+    if (initialGrossPay > 0) {
+      calculateBreakdown(initialGrossPay.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Calculate breakdown function
+  const calculateBreakdown = async (payValue: string) => {
+    // Clear previous error
+    setError('');
+    
+    // Handle empty input
+    if (payValue === '' || payValue === '0') {
+      setPayBreakdown(null);
+      onIncomeChangeRef.current?.(null);
+      return;
+    }
+
+    // Validate gross pay input
+    const validation = validateGrossPay(payValue);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid gross pay');
+      setPayBreakdown(null);
+      onIncomeChangeRef.current?.(null);
+      return;
+    }
+
+    const numericGrossPay = parseFloat(payValue);
+    
+    try {
+      setIsCalculating(true);
       
-      // Handle empty input
-      if (grossPay === '') {
-        setPayBreakdown(null);
-        onIncomeChangeRef.current?.(null);
-        return;
-      }
-
-      // Validate gross pay input
-      const validation = validateGrossPay(grossPay);
-      if (!validation.isValid) {
-        setError(validation.error || 'Invalid gross pay');
-        setPayBreakdown(null);
-        onIncomeChangeRef.current?.(null);
-        return;
-      }
-
-      const numericGrossPay = parseFloat(grossPay);
+      // Add small delay to show loading state for better UX
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      try {
-        setIsCalculating(true);
-        
-        // Add small delay to show loading state for better UX
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const breakdown = calculateNetPay(numericGrossPay);
-        setPayBreakdown(breakdown);
-        onIncomeChangeRef.current?.(breakdown);
-      } catch (calculationError) {
-        const appError = handleCalculationError(calculationError, 'income calculation');
-        setError(appError.message);
-        setPayBreakdown(null);
-        onIncomeChangeRef.current?.(null);
-        logError(appError, 'calculating income breakdown');
-      } finally {
-        setIsCalculating(false);
-      }
-    };
-
-    calculateBreakdown();
-  }, [grossPay]);
+      const breakdown = calculateNetPay(numericGrossPay);
+      setPayBreakdown(breakdown);
+      onIncomeChangeRef.current?.(breakdown);
+    } catch (calculationError) {
+      const appError = handleCalculationError(calculationError, 'income calculation');
+      setError(appError.message);
+      setPayBreakdown(null);
+      onIncomeChangeRef.current?.(null);
+      logError(appError, 'calculating income breakdown');
+    } finally {
+      setIsCalculating(false);
+    }
+  };
 
   const handleGrossPayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -102,6 +106,19 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
     }
   };
 
+  // Handle Enter key press to calculate
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      calculateBreakdown(grossPay);
+    }
+  };
+
+  // Handle Calculate button click
+  const handleCalculateClick = () => {
+    calculateBreakdown(grossPay);
+  };
+
   const formatCurrency = (amount: number): string => {
     return `${APP_CONSTANTS.CURRENCY} ${amount.toLocaleString('en-KE', { 
       minimumFractionDigits: 2, 
@@ -125,29 +142,39 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
         <label htmlFor="grossPay" className="block text-sm font-semibold text-gray-700 mb-3">
           Gross Pay (Monthly Salary)
         </label>
-        <div className="relative group">
-          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-            {APP_CONSTANTS.CURRENCY}
-          </span>
-          <input
-            id="grossPay"
-            type="text"
-            value={grossPay}
-            onChange={handleGrossPayChange}
-            placeholder="40,000"
-            className={`input-field pl-16 pr-4 py-4 text-lg font-semibold ${
-              error ? 'input-error' : ''
-            } ${isCalculating ? 'bg-blue-50 border-blue-300' : ''} group-hover:shadow-md`}
-            disabled={isCalculating}
-          />
-          {isCalculating && (
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-              <svg className="animate-spin w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
-          )}
+        <div className="flex gap-3">
+          <div className="relative group flex-1">
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+              {APP_CONSTANTS.CURRENCY}
+            </span>
+            <input
+              id="grossPay"
+              type="text"
+              value={grossPay}
+              onChange={handleGrossPayChange}
+              onKeyPress={handleKeyPress}
+              placeholder="40,000"
+              className={`input-field pl-16 pr-4 py-4 text-lg font-semibold ${
+                error ? 'input-error' : ''
+              } ${isCalculating ? 'bg-blue-50 border-blue-300' : ''} group-hover:shadow-md w-full`}
+              disabled={isCalculating}
+            />
+            {isCalculating && (
+              <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                <svg className="animate-spin w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleCalculateClick}
+            disabled={isCalculating || !grossPay}
+            className="px-6 py-4 bg-linear-to-r from-blue-600 to-green-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {isCalculating ? 'Calculating...' : 'Calculate'}
+          </button>
         </div>
         {error && (
           <div className="mt-2 flex items-center space-x-2">
@@ -158,13 +185,12 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
           </div>
         )}
         
-        {isCalculating && (
+        {!error && !payBreakdown && grossPay && (
           <div className="mt-2 flex items-center space-x-2">
-            <svg className="animate-spin w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
-            <p className="text-sm text-blue-600">Calculating...</p>
+            <p className="text-sm text-blue-600">Press Enter or click Calculate to see your breakdown</p>
           </div>
         )}
       </div>
@@ -290,7 +316,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
       )}
 
       {/* Example/Help Text */}
-      {!payBreakdown && !error && (
+      {!payBreakdown && !error && !grossPay && (
         <div className="mt-6 p-5 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
@@ -301,7 +327,7 @@ export default function IncomeSection({ onIncomeChange, initialGrossPay = 0 }: I
             <div>
               <p className="text-blue-800 font-medium mb-1">Get Started</p>
               <p className="text-sm text-blue-700 leading-relaxed">
-                Enter your monthly gross salary (e.g., KSh 40,000) to automatically calculate your net pay after Kenyan statutory deductions including SHA, PAYEE, and Housing Levy.
+                Enter your monthly gross salary (e.g., KSh 40,000) and press <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-xs font-mono">Enter</kbd> or click the Calculate button to see your net pay after Kenyan statutory deductions including SHA, PAYEE, and Housing Levy.
               </p>
             </div>
           </div>

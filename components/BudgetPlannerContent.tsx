@@ -51,12 +51,12 @@ export default function BudgetPlannerContent() {
             </div>
             <div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-linear-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                Budget Planner
+                My Budget Planner
               </h1>
             </div>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto lg:mx-0">
-            Manage your finances with Kenyan statutory deductions and expense tracking
+            Personal finance tracker with Kenyan statutory deductions
           </p>
         </header>
 
@@ -179,7 +179,7 @@ export default function BudgetPlannerContent() {
           <footer className="text-center text-gray-500 text-sm py-6 border-t border-gray-200 mt-12">
             <div className="space-y-2">
               <p className="font-medium">
-                Budget Planner - Personal Finance Management for Kenyan Users
+                My Personal Budget Planner
               </p>
               <p className="text-xs">
                 Tax calculations based on 2024 Kenyan statutory rates
@@ -187,7 +187,7 @@ export default function BudgetPlannerContent() {
               <div className="flex items-center justify-center space-x-4 text-xs pt-2">
                 <span className="flex items-center space-x-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Data saved locally</span>
+                  <span>Data saved locally in your browser</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
